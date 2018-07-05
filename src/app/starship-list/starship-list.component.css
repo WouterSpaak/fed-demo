@@ -1,0 +1,10 @@
+:host table td,
+:host table th {
+  text-align: left;
+}
+:host table td {
+  border: 1px solid #ccc;
+}
+:host table {
+  width: 100%;
+}
