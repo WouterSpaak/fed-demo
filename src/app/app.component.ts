@@ -54,11 +54,9 @@ export class AppComponent {
 
     this.loading$ = merge(query$.pipe(mapTo(true)), results$.pipe(mapTo(false)));
 
-    this.filteredResults$ = combineLatest(results$, this.numberOfPassengers$, this.filterByPassengers);
-  }
-
-  private filterByPassengers(results: any[], passengers: number): any[] {
-    return results.filter(v => Number(v.passengers) < passengers);
+    this.filteredResults$ = combineLatest(results$, this.numberOfPassengers$, ([results, maxPassengers]) => {
+      return results.filter((val: { passengers: number }) => val.passengers < maxPassengers);
+    });
   }
 
   // @TODO: Generate API interfaces.
