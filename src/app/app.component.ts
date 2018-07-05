@@ -1,16 +1,9 @@
-import { Component, ChangeDetectionStrategy, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, ReplaySubject, BehaviorSubject, merge, combineLatest, of } from 'rxjs';
-import {
-  map,
-  mapTo,
-  merge as mergePipe,
-  catchError,
-  startWith,
-  switchMap,
-  publishReplay,
-  refCount
-} from 'rxjs/operators';
+import { map, mapTo, catchError, startWith, switchMap, publishReplay, refCount } from 'rxjs/operators';
+import { ships } from './ships';
+
 @Component({
   selector: 'app-root',
   styleUrls: ['./app.component.css'],
@@ -33,37 +26,24 @@ import {
   </div>
   `
 })
-export class AppComponent implements OnInit {
-  fixedModels = [
-    'Executor-class star dreadnought',
-    'Sentinel-class landing craft',
-    'DS-1 Orbital Battle Station',
-    'YT-1300 light freighter',
-    'BTL Y-wing',
-    'T-65 X-wing',
-    'Twin Ion Engine Advanced x1',
-    'Firespray-31-class patrol and attack',
-    'Lambda-class T-4a shuttle',
-    'EF76 Nebulon-B escort frigate'
-  ];
+export class AppComponent {
+  readonly fixedModels = ships;
 
-  // source streams
-  // --------------
-  selectedModel$ = new ReplaySubject<string>(1);
-  searchTerm$ = new ReplaySubject<string>(1);
-  randomModel$ = new ReplaySubject<string>(1);
-  numberOfPassengers$ = new BehaviorSubject(1000000);
+  /**
+   * Input streams
+   */
+  readonly selectedModel$ = new ReplaySubject<string>(1);
+  readonly searchTerm$ = new ReplaySubject<string>(1);
+  readonly randomModel$ = new ReplaySubject<string>(1);
+  readonly numberOfPassengers$ = new BehaviorSubject(1000000);
 
-  // presentation streams
-  // --------------------
+  /**
+   * Presentation streams
+   */
   loading$: Observable<boolean>;
   filteredResults$: Observable<any>;
 
-  constructor(private httpClient: HttpClient) {}
-
-  ngOnInit(): void {
-    // intermediate streams
-    // --------------------
+  constructor(private readonly httpClient: HttpClient) {
     const query$ = merge(this.searchTerm$, this.randomModel$, this.selectedModel$).pipe(startWith(''));
 
     const results$ = query$.pipe(
@@ -72,12 +52,7 @@ export class AppComponent implements OnInit {
       refCount()
     );
 
-    // presentation streams
-    // --------------------
-    this.loading$ = query$.pipe(
-      mapTo(true),
-      mergePipe(results$.pipe(mapTo(false)))
-    );
+    this.loading$ = merge(query$.pipe(mapTo(true)), results$.pipe(mapTo(false)));
 
     this.filteredResults$ = combineLatest(results$, this.numberOfPassengers$, this.filterByPassengers);
   }
@@ -86,10 +61,11 @@ export class AppComponent implements OnInit {
     return results.filter(v => Number(v.passengers) < passengers);
   }
 
+  // @TODO: Generate API interfaces.
   private fetchData(query: string): Observable<any[]> {
     query = query ? `?search=${query}` : '';
     return this.httpClient.get(`https://swapi.co/api/starships/${query}`).pipe(
-      catchError(v => of({ results: [] })),
+      catchError(() => of({ results: [] })),
       map((v: any) => v.results)
     );
   }
