@@ -9,21 +9,21 @@ import { ships } from './ships';
   styleUrls: ['./app.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-  <app-sidebar class="sidebar"
-    [models]="fixedModels"
-    [numberOfPassengers]="numberOfPassengers$ | async"
-    (search)="searchTerm$.next($event)"
-    (selectModel)="selectedModel$.next($event)"
-    (randomModel)="randomModel$.next($event)"
-    (changeNumberOfPassengers)="numberOfPassengers$.next($event)"
-  >
-  </app-sidebar>
-  <div class="main">
-    <app-starship-list
-        [starships]="filteredResults$ | async"
-        [loading]="loading$ | async">
-    </app-starship-list>
-  </div>
+    <app-sidebar class="sidebar"
+      [models]="fixedModels"
+      [numberOfPassengers]="numberOfPassengers$ | async"
+      (search)="searchTerm$.next($event)"
+      (selectModel)="selectedModel$.next($event)"
+      (randomModel)="randomModel$.next($event)"
+      (changeNumberOfPassengers)="numberOfPassengers$.next($event)"
+    >
+    </app-sidebar>
+    <div class="main">
+      <app-starship-list
+          [starships]="filteredResults$ | async"
+          [loading]="loading$ | async">
+      </app-starship-list>
+    </div>
   `
 })
 export class AppComponent {
@@ -44,8 +44,10 @@ export class AppComponent {
   filteredResults$: Observable<any>;
 
   constructor(private readonly httpClient: HttpClient) {
+    /**
+     * Intermediate streams
+     */
     const query$ = merge(this.searchTerm$, this.randomModel$, this.selectedModel$).pipe(startWith(''));
-
     const results$ = query$.pipe(
       switchMap(query => this.fetchData(query)),
       publishReplay(1),
@@ -54,7 +56,7 @@ export class AppComponent {
 
     this.loading$ = merge(query$.pipe(mapTo(true)), results$.pipe(mapTo(false)));
 
-    this.filteredResults$ = combineLatest(results$, this.numberOfPassengers$, ([results, maxPassengers]) => {
+    this.filteredResults$ = combineLatest(results$, this.numberOfPassengers$, (results, maxPassengers) => {
       return results.filter((val: { passengers: number }) => val.passengers < maxPassengers);
     });
   }
